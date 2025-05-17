@@ -1,0 +1,55 @@
+import { useState } from 'react';
+import axios from 'axios';
+
+const useGetOptimizedPortfolio = () => {
+    const [portfolioLoading, setPortfolioLoading] = useState(false);
+    const [portfolioError, setPortfolioError] = useState(null);
+    const [optimalPortfolio, setOptimalPortfolio] = useState({});
+
+    const getOptimizedPortfolio = async (tickers, weights = [], riskFree = 0, targetReturn = 0, shorting = false, optType = "neg_sharpe") => {
+        setPortfolioLoading(true);
+        setPortfolioError(null);
+
+        try {
+            const response = await axios.post(
+                'http://127.0.0.1:5000/api/securities/optimal_portfolio',
+                {
+                    tickers,
+                    weights: weights.length ? weights : null,
+                    risk_free: riskFree,
+                    target_return: targetReturn,
+                    shorting,
+                    opt_type: optType,
+                },
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                }
+            );
+
+            // Set the optimal portfolio response data to state
+            setOptimalPortfolio({
+                optimalWeights: response.data.optimal_weights,
+                optimalReturn: response.data.optimal_return,
+                optimalRisk: response.data.optimal_risk,
+                optimalSharpe: response.data.optimal_sharpe,
+            });
+
+        } catch (err) {
+            // Handle any errors
+            setPortfolioError(err.response ? err.response.data.error : 'An error occurred on the front end');
+        } finally {
+            setPortfolioLoading(false);
+        }
+    };
+
+    return {
+        getOptimizedPortfolio,
+        optimalPortfolio,
+        portfolioLoading,
+        portfolioError,
+    };
+};
+
+export default useGetOptimizedPortfolio;
