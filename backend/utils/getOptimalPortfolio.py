@@ -1,9 +1,9 @@
 import numpy as np
 import pandas as pd
 from scipy.optimize import minimize
-from backend.utils.negateSharpe import _negate_sharpe
-from backend.utils.portfolioRisk import _portfolio_risk
-from backend.utils.getSecurityInfo import _get_security_info
+from utils.negateSharpe import _negate_sharpe
+from utils.portfolioRisk import _portfolio_risk
+from utils.getSecurityInfo import _get_security_info
 
 def _get_optimal_portfolio(returns, asset_bounds, target_return, risk_free, w=[], opt_type="port_risk"):
     try:

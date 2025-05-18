@@ -1,13 +1,13 @@
 from flask import Blueprint, jsonify, request
-from backend.utils.fetchAndStore import _fetch_and_store_security
-from backend.utils.getSecurityInfo import _get_security_info
-from backend.utils.getOptimalPortfolio import _get_optimal_portfolio
+from utils.fetchAndStore import _fetch_and_store_security
+from utils.getSecurityInfo import _get_security_info
+from utils.getOptimalPortfolio import _get_optimal_portfolio
 from scipy.optimize import minimize
-from backend.models.SecurityModel import Security
+from models.SecurityModel import Security
 import yfinance as yf
 import numpy as np
 from math import sqrt
-from backend.db_config import db
+from db_config import db
 import pandas as pd
 
 security_bp = Blueprint("security_bp", __name__)

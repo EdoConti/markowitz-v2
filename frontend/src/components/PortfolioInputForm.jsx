@@ -4,8 +4,8 @@ import PostSecurity from './PostSecurity';
 import SecuritiesDropdown from './SecuritiesDropDown';
 import useGetAllSecurities from '../hooks/getAllSecurities';
 import Loader from './Loader';
-import PortfolioInputsTheory from '../theory-components/PortfolioInputsTheory';
-import PortfolioTheory from '../theory-components/PortfolioTheory';
+// import PortfolioInputsTheory from '../theory-components/PortfolioInputsTheory';
+// import PortfolioTheory from '../theory-components/PortfolioTheory';
 
 const PortfolioInputForm = ({ assetInfo, getAssetInfo, setAssetInfo, loading, error, portfolioInputRef, portfolioRef}) => {
     const [ticker, setTicker] = useState('');
@@ -14,7 +14,7 @@ const PortfolioInputForm = ({ assetInfo, getAssetInfo, setAssetInfo, loading, er
     const { securities, all_loading, all_error } = useGetAllSecurities();
     const [selectedSecurities, setSelectedSecurities] = useState([]);
     const [isShowPIInfo, setShowPIInfo] = useState(false);
-    const [isShowPInfo, setShowPInfo] = useState(false);
+    // const [isShowPInfo, setShowPInfo] = useState(false);
 
     const handlePostSecurity = async (e) => {
         e.preventDefault();
@@ -28,12 +28,12 @@ const PortfolioInputForm = ({ assetInfo, getAssetInfo, setAssetInfo, loading, er
     return (
         <div className="bg-slate-600 p-6 shadow-md rounded-lg mb-8 space-y-2">
             <div className='flex justify-between items-center'>
-                <h2 className="text-3xl font-semibold mb-4 text-white flex items-center gap-2" ref={portfolioInputRef} id='portfolioInputs'>Portfolio Inputs <i onClick={()=> {setShowPIInfo(!isShowPIInfo)}} className="fa-solid fa-circle-info hover:opacity-75"></i></h2>
+                <h2 className="text-3xl font-semibold mb-4 text-white flex items-center gap-2" ref={portfolioInputRef} id='portfolioInputs'>Portfolio Inputs {/*<i onClick={()=> {setShowPIInfo(!isShowPIInfo)}} className="fa-solid fa-circle-info hover:opacity-75"></i>*/}</h2>
                 <button className='bg-yellow-500 text-white px-4 py-2 rounded hover:opacity-75' onClick={() => {setPostAssetVisibility(true)}}>Post a New Security</button>
                 {isPostAssetVisible && <PostSecurity setTicker={setTicker} handlePostSecurity={handlePostSecurity} loading={loading} error={error} successMessage={successMessage} setAssetInfo={setAssetInfo} getAssetInfo={getAssetInfo}/>}
             </div>
             <div>
-                {isShowPIInfo && <PortfolioInputsTheory/>}
+                {/*{isShowPIInfo && <PortfolioInputsTheory/>}*/}
                 <SecuritiesDropdown securities={securities} all_error={all_error} all_loading={all_loading} selectedSecurities={selectedSecurities} setSelectedSecurities={setSelectedSecurities} getAssetInfo={getAssetInfo} setAssetInfo={setAssetInfo}/>
                 <table className="w-full">
                     <thead>
@@ -53,9 +53,9 @@ const PortfolioInputForm = ({ assetInfo, getAssetInfo, setAssetInfo, loading, er
                             <th className="text-white font-semibold text-lg py-4">
                                 <div className="flex items-center justify-center bg-gray-400 rounded-md p-4">Standard Deviation</div>
                             </th>
-                            <th className='text-gray-400 font-semibold py-4'>
+                            {/*<th className='text-gray-400 font-semibold py-4'>
                                 <i className="fa-solid fa-circle-info hover:opacity-75 text-3xl" onClick={()=>{setShowPInfo(!isShowPInfo)}}></i>
-                            </th>
+                            </th>*/}
                             <th className="py-4"></th>
                         </tr>
                     </thead>
@@ -90,7 +90,7 @@ const PortfolioInputForm = ({ assetInfo, getAssetInfo, setAssetInfo, loading, er
                         }))}
                     </tbody>
                 </table>
-                {isShowPInfo && <PortfolioTheory/>}
+                {/*{isShowPInfo && <PortfolioTheory/>}*/}
             </div>
         </div>
     );

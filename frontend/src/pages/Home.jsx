@@ -53,7 +53,7 @@ const Home = () => {
     return (
         <div className='bg-slate-700'>
             <Header />
-            <NavComp sectionRefs={sectionRefs} visibleSection={visibleSection}/>
+           {/*<NavComp sectionRefs={sectionRefs} visibleSection={visibleSection}/>*/}
             <div className="container mx-auto py-6 px-4">
                 <h1 className="text-3xl font-bold text-center mb-6 text-blue-600">Markowitz Efficient Frontier</h1>
                 <PortfolioInputForm portfolioInputRef={sectionRefs.portfolioInputs} portfolioRef={sectionRefs.portfolio} assetInfo={assetInfo} getAssetInfo={getAssetInfo} setAssetInfo={setAssetInfo} loading={loading} error={error}/>

@@ -1,4 +1,4 @@
-from backend.db_config import db
+from db_config import db
 import numpy as np
 
 def _get_security_info(ticker):

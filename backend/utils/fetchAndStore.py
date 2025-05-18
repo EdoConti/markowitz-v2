@@ -1,6 +1,6 @@
 import logging
-from backend.db_config import db
-from backend.models.SecurityModel import Security
+from db_config import db
+from models.SecurityModel import Security
 
 def _fetch_and_store_security(ticker):
     """

@@ -1,5 +1,5 @@
 import numpy as np
-from backend.utils.portfolioRisk import _portfolio_risk
+from utils.portfolioRisk import _portfolio_risk
 
 def _negate_sharpe(w, exp_ret, cov_m, r_free):
         portfolio_ret = np.dot(w, exp_ret)
