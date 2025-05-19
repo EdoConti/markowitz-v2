@@ -1,7 +1,7 @@
 from flask import Flask
 from flask_cors import CORS
-from backend.db_config import db  # Import the MongoDB connection from your db_config file
-from backend.routes.SecurityRoutes import security_bp  # Import your security routes blueprint
+from db_config import db  # Import the MongoDB connection from your db_config file
+from routes.SecurityRoutes import security_bp  # Import your security routes blueprint
 
 # Initialize the Flask app
 app = Flask(__name__)

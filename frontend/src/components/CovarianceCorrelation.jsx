@@ -3,7 +3,7 @@ import useGetCovarianceCorrelationMatrices from '../hooks/getCorCovMatrices';
 import ErrorBanner from './ErrorBanner';
 import Loader from './Loader';
 
-const CovarianceCorrelation = ({ assetInfo, matricesRef }) => {
+const CovarianceCorrelation = ({ assetInfo }) => {
     const {
         getCovarianceCorrelationMatrices,
         covarianceMatrix,
@@ -51,7 +51,7 @@ const CovarianceCorrelation = ({ assetInfo, matricesRef }) => {
     return (
         <div className='my-[5rem]'>
             <p className='text-3xl flex justify-center font-bold text-white border-b-2 border-t-2 my-[3rem]'>Matrices</p>
-            <div className="flex flex-wrap justify-center gap-10 w-full mb-[5rem]" id='matrices'>
+            <div className="flex flex-wrap justify-center gap-10 w-full mb-[5rem]">
                 <div className="w-2/3 flex flex-col justify-center">
                     {covarianceMatrix && <h2 className="text-3xl font-bold mb-2 text-center text-blue-500">Covariance Matrix</h2>}
                     {covarianceMatrix && (
@@ -71,7 +71,7 @@ const CovarianceCorrelation = ({ assetInfo, matricesRef }) => {
                                     ))}
                                 </tr>
                             </thead>
-                            <tbody ref={matricesRef}>
+                            <tbody>
                                 {/* Row Data */}
                                 {covarianceMatrix.data.map((row, i) => (
                                     <tr key={i}>

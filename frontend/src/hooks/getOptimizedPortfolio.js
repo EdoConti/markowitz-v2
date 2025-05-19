@@ -6,7 +6,7 @@ const useGetOptimizedPortfolio = () => {
     const [portfolioError, setPortfolioError] = useState(null);
     const [optimalPortfolio, setOptimalPortfolio] = useState({});
 
-    const getOptimizedPortfolio = async (tickers, weights = [], riskFree = 0, targetReturn = 0, shorting = false, optType = "neg_sharpe") => {
+    const getOptimizedPortfolio = async (tickers, weights = [], riskFree = 0, liquidityFactor = 0) => {
         setPortfolioLoading(true);
         setPortfolioError(null);
 
@@ -17,9 +17,7 @@ const useGetOptimizedPortfolio = () => {
                     tickers,
                     weights: weights.length ? weights : null,
                     risk_free: riskFree,
-                    target_return: targetReturn,
-                    shorting,
-                    opt_type: optType,
+                    liquidityFactor:liquidityFactor,
                 },
                 {
                     headers: {

@@ -3,16 +3,6 @@ import Loader from "./Loader";
 import ErrorBanner from "./ErrorBanner";
 
 const SecuritiesDropdown = ({ securities, all_error, all_loading, selectedSecurities, setSelectedSecurities, getAssetInfo, setAssetInfo }) => {
-    
-    const handleConfirmChoices = async (e) => {
-        e.preventDefault();
-    
-        // Fetch data for selected securities using getAssetInfo
-        const assetData = await getAssetInfo(selectedSecurities);
-        
-        // Set the fetched data into assetInfo
-        setAssetInfo(assetData);
-        };
 
   // Handle security selection with max of 10
     const handleSelection = (event) => {
@@ -89,14 +79,6 @@ const SecuritiesDropdown = ({ securities, all_error, all_loading, selectedSecuri
                 </label>
                 ))}
             </div>
-
-            {/* Confirm button */}
-            <button
-                onClick={handleConfirmChoices}
-                className="mt-4 w-full py-2 bg-indigo-600 text-white font-semibold rounded-md hover:bg-indigo-700"
-            >
-                Confirm Choices
-            </button>
         </div>
     );
 };

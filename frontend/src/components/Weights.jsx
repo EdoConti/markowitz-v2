@@ -1,43 +1,75 @@
-import React, {useMemo, useState, useEffect} from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import Loader from './Loader';
 
-const Weights = (props) => {
-    const {assetInfo, shortSell, error, loading} = props;
-    const [weights, setWeights] = useState({});
-    const [isRandom, setIsRandom] = useState(true);
+const Weights = ({ assetInfo, error, loading, weights, setWeights }) => {
+    const incrementRefs = useRef({});
+    const decrementRefs = useRef({});
 
-    // Initialize weights based on the number of assets
+    // Initialize weights to 0
     useEffect(() => {
         if (assetInfo) {
-            if (!isRandom) {
-                setEqualWeights();
-            }
-        }
-    }, [assetInfo, isRandom]);
-
-    const setEqualWeights = () => {
-        const numAssets = Object.keys(assetInfo).length;
-        const initialWeight = 100 / numAssets;
-        const initialWeights = Object.keys(assetInfo).reduce((acc, ticker) => {
-            acc[ticker] = initialWeight;
+            const initial = Object.keys(assetInfo).reduce((acc, t) => {
+            acc[t] = 0;
             return acc;
-        }, {});
-        setWeights(initialWeights);
-    };
+            }, {});
+            setWeights(initial);
+        }
+    }, [assetInfo]);
+
+    // Calculate sum of allocated weights
+    const totalAllocated = Object.values(weights).reduce((sum, w) => sum + w, 0);
+    const remaining = 100 - totalAllocated;
 
 
     const handleIncrement = (ticker) => {
-        setWeights((prevWeights) => ({
-            ...prevWeights,
-            [ticker]: Math.min(prevWeights[ticker] + 1, 100),
-        }));
+        setWeights(prev => {
+            // compute total from the *current* state object
+            const total = Object.values(prev).reduce((sum, w) => sum + w, 0);
+            if (total >= 100) return prev;      // never go above 100
+            
+            return {
+            ...prev,
+            [ticker]: prev[ticker] + 1,       // guaranteed to be safe by the guard
+            };
+        });
     };
 
     const handleDecrement = (ticker) => {
-        setWeights((prevWeights) => ({
-            ...prevWeights,
-            [ticker]: Math.max(prevWeights[ticker] - 1, 0),
+        if (weights[ticker] <= 0) return;
+            setWeights((prev) => ({
+            ...prev,
+            [ticker]: Math.max(prev[ticker] - 1, 0),
         }));
+    };
+
+    const startContinuous = (ticker, type) => {
+        // do one immediate tick via the same handlers:
+        type === 'inc' ? handleIncrement(ticker) : handleDecrement(ticker);
+
+        // then schedule repeats
+        const id = setInterval(() => {
+            // call through our guarded handlers
+            type === 'inc' ? handleIncrement(ticker) : handleDecrement(ticker);
+
+            // also check total inside the loop and clear ourselves out
+            setWeights(prev => {
+                const tot = Object.values(prev).reduce((sum, w) => sum + w, 0);
+                if (tot >= 100 && type === 'inc') {
+                    clearInterval(id);
+                }
+                return prev;
+            });
+        }, 150);
+
+        if (type === 'inc') incrementRefs.current[ticker] = id;
+        else decrementRefs.current[ticker] = id;
+    };
+
+
+    // Stop continuous change
+    const stopContinuous = (ticker, type) => {
+        const id = type === 'inc' ? incrementRefs.current[ticker] : decrementRefs.current[ticker];
+        clearInterval(id);
     };
 
 
@@ -54,63 +86,42 @@ const Weights = (props) => {
 
     return (
         <div className='px-5 ml-10'>
-            <h2 className='text-2xl font-bold mb-4 text-white'>Choose your <span className='text-blue-500'>starting weights</span> or <span className='text-blue-500'>leave blank</span> for random weights:</h2>
-            <div>
-                <div className='flex space-x-4 items-center'>
-                    <input
-                    type='radio'
-                    className='form-radio h-4 w-4 text-indigo-600'
-                    checked={!isRandom}
-                    onChange={()=> {setIsRandom(false)}}
-                    />
-                    <span className="flex items-center space-x-2 text-gray-100 text-2xl font-semibold border-b mb-1"><p>Use Custom Weights</p></span>
-                </div>
-                {assetInfo && Object.keys(assetInfo).map((ticker, index) => {
-                    const asset = assetInfo[ticker];
-                    const weight = weights[ticker] || 0;
-                    return (
-                        <div className='flex flex-col py-2'>
-                            <div key={index} className='flex gap-10 ml-8'>
-                                <p className='text-white font-semibold'>{ticker}</p>
-                                <div className="flex items-center justify-center space-x-5 text-sm">
-                                    <input
-                                    className='flex min-w-[0.5rem]'
-                                    type='number'
-                                    defaultValue={shortSell ? -100 : 0}
-                                    min={shortSell ? -100:0}
-                                    max={50}
-                                    disabled={isRandom}
-                                    />
-                                    <i className="fa-solid fa-minus cursor-pointer font-semibold text-white"
-                                    onClick={() => handleDecrement(ticker)}
-                                    ></i>
-                                    <p className="text-md font-semibold text-white">{weight}%</p>
-                                    <i className="fa-solid fa-plus cursor-pointer font-semibold text-white"
-                                    onClick={() => handleIncrement(ticker)}
-                                    ></i>
-                                    <input
-                                    className='flex min-w-[0.5rem]'
-                                    type='number'
-                                    defaultValue={100}
-                                    min={0}
-                                    max={100}
-                                    disabled={isRandom}
-                                    />
-                                </div>
+            <h2 className='text-2xl font-bold mb-4 text-white'>Choose your <span className='text-blue-500'>starting weights</span> or <span className='text-blue-500'>leave as-is</span> for random weights:</h2>
+            <p className='text-xl font-bold mb-4 text-slate-800'>Remaining to allocate:  <span className='text-blue-300'> {remaining}% </span></p>
+            {assetInfo && (
+                <div className='mt-4 space-y-2'>
+                    {Object.keys(assetInfo).map((ticker) => (
+                        <div key={ticker} className='flex items-center justify-between bg-gray-800 p-2 rounded'>
+                            <span className='text-white font-semibold mx-3'>{ticker}</span>
+                            <div className='flex items-center space-x-5'>
+                                <button
+                                    className='px-2 py-1 rounded bg-gray-700 hover:bg-red-400'
+                                    disabled={weights[ticker] <= 0}
+                                    onMouseDown={() => startContinuous(ticker, 'dec')}
+                                    onMouseUp={() => stopContinuous(ticker, 'dec')}
+                                    onMouseLeave={() => stopContinuous(ticker, 'dec')}
+                                    onTouchStart={() => startContinuous(ticker, 'dec')}
+                                    onTouchEnd={() => stopContinuous(ticker, 'dec')}
+                                >
+                                    -
+                                </button>
+                                <span className='text-white font-medium w-[20px]'>{weights[ticker]}%</span>
+                                <button
+                                className='px-2 py-1 rounded bg-gray-700 hover:bg-green-400'
+                                disabled={remaining <= 0}
+                                onMouseDown={() => startContinuous(ticker, 'inc')}
+                                onMouseUp={() => stopContinuous(ticker, 'inc')}
+                                onMouseLeave={() => stopContinuous(ticker, 'inc')}
+                                onTouchStart={() => startContinuous(ticker, 'inc')}
+                                onTouchEnd={() => stopContinuous(ticker, 'inc')}
+                                >
+                                +
+                                </button>
                             </div>
                         </div>
-                    );
-                })}
-            </div>
-            <div className='flex items-center space-x-4'>
-                <input
-                type='radio'
-                className='form-radio h-4 w-4 text-indigo-600'
-                checked={isRandom}
-                onChange={()=> {setIsRandom(true)}}
-                />
-                <span className="flex items-center space-x-2 text-gray-100 text-2xl font-semibold border-b mb-1"><p>Use Random Weights</p></span>
-            </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 };
