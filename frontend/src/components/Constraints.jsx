@@ -6,7 +6,7 @@ import MarkowitzChart from './MarkowitzChart';
 const ConstraintsComponent = ({assetInfo}) => {
     // State to manage risk-free rate options and constraints
     const [weights, setWeights] = useState({});
-    const [riskFreeType, setRiskFreeType] = useState('USD');
+    const [riskFreeType, setRiskFreeType] = useState('^TNX');
     const [riskFree, setRiskFree] = useState(0);
     const [liquidityFactor,setLiquidityFactor] = useState(50);
     const {
@@ -21,7 +21,7 @@ const ConstraintsComponent = ({assetInfo}) => {
     const handleOptimization = () => {
         if (tickers_ls && tickers_ls.length > 1) {
             // Define the parameters before using them in the function call
-            getOptimizedPortfolio(tickers_ls, weights, riskFree, liquidityFactor);
+            getOptimizedPortfolio(tickers_ls, weights, riskFree, riskFreeType, liquidityFactor);
         }
     };
 
@@ -57,9 +57,9 @@ const ConstraintsComponent = ({assetInfo}) => {
                                 <input
                                     type="radio"
                                     name="riskFreeType"
-                                    value="USD"
+                                    value="^TNX"
                                     className="form-radio h-4 w-4 text-indigo-600"
-                                    checked={riskFreeType === 'USD'}
+                                    checked={riskFreeType === '^TNX'}
                                     onChange={handleRiskFreeTypeChange}
                                 />
                                 <span className="ml-2 text-white">US10Y (4.014%)</span>
@@ -187,14 +187,12 @@ const ConstraintsComponent = ({assetInfo}) => {
 
             {tickers_ls.length >= 2 && (
                 <button 
-                className='text-white px-4 py-2 rounded bg-indigo-600 hover:bg-indigo-700'>
+                className='text-white px-4 py-2 rounded bg-indigo-600 hover:bg-indigo-700' onClick={handleOptimization}>
                     Apply Constraints and Get Optimal Portfolio
                 </button>
             )}
 
-            {optimalPortfolio.length == 0 && (
-                <MarkowitzChart optimalPortfolio={optimalPortfolio} portfolioError={portfolioError} portfolioLoading={portfolioLoading}/>
-            )}
+            <MarkowitzChart optimalPortfolio={optimalPortfolio} portfolioError={portfolioError} portfolioLoading={portfolioLoading}/>
         </div>
     );
 };

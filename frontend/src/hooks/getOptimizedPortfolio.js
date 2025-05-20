@@ -6,7 +6,7 @@ const useGetOptimizedPortfolio = () => {
     const [portfolioError, setPortfolioError] = useState(null);
     const [optimalPortfolio, setOptimalPortfolio] = useState({});
 
-    const getOptimizedPortfolio = async (tickers, weights = [], riskFree = 0, liquidityFactor = 0) => {
+    const getOptimizedPortfolio = async (tickers, weights, riskFree, riskFree_Type, liquidityFactor = 0.5) => {
         setPortfolioLoading(true);
         setPortfolioError(null);
 
@@ -15,9 +15,10 @@ const useGetOptimizedPortfolio = () => {
                 'http://127.0.0.1:5000/api/securities/optimal_portfolio',
                 {
                     tickers,
-                    weights: weights.length ? weights : null,
-                    risk_free: riskFree,
-                    liquidityFactor:liquidityFactor,
+                    weights,
+                    riskFree,
+                    riskFree_Type,
+                    liquidityFactor,
                 },
                 {
                     headers: {

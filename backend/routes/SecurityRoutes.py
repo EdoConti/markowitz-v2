@@ -117,27 +117,16 @@ def get_optimal_portfolio():
         # Extract parameters from the JSON payload
         tickers = data.get('tickers', [])
         weights = data.get('weights', [])
-        risk_free = data.get('risk_free', 0.03)  # Default to 0.03 if not provided
-        target_return = data.get('target_return', 0.07)  # Default to 0.07 if not provided
-        shorting = data.get('shorting', False)  # Default to False if not provided
-        opt_type = data.get('opt_type', 'port_risk')  # Default to 'port_risk' if not provided
+        risk_free = data.get('riskFree', 0.03)  # Default to 0.03 if not provided
+        risk_free_type = data.get('riskFree_Type', 0.03)
+        liquidity_factor = data.get('liquidityFactor',0.5)
 
         # Ensure tickers array is populated
         if not tickers:
             return jsonify({"error": "Tickers array is not populated!"}), 400
 
-        # Fetch returns for each ticker
-        returns = {}
-        for ticker in tickers:
-            security_data, status_code = _get_security_info(ticker)
-            if status_code == 200:
-                returns[ticker] = security_data["daily_returns"]
-
-        # Determine asset bounds based on shorting permission
-        asset_bounds = [(0, 1) for _ in tickers] if not shorting else [(-1, 1) for _ in tickers]
-
         # Call the function to calculate the optimal portfolio
-        result, status_code = _get_optimal_portfolio(returns, asset_bounds, target_return, risk_free, weights, opt_type)
+        result, status_code = _get_optimal_portfolio(tickers, weights, risk_free, risk_free_type, liquidity_factor)
 
         return jsonify(result), status_code
 
