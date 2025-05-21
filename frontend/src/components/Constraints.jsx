@@ -62,7 +62,7 @@ const ConstraintsComponent = ({assetInfo}) => {
                                     checked={riskFreeType === '^TNX'}
                                     onChange={handleRiskFreeTypeChange}
                                 />
-                                <span className="ml-2 text-white">US10Y (4.014%)</span>
+                                <span className="ml-2 text-white">US10Y</span>
                             </label>
 
                             {/* Europe Risk-Free option */}
@@ -75,7 +75,7 @@ const ConstraintsComponent = ({assetInfo}) => {
                                     checked={riskFreeType === "STR"}
                                     onChange={handleRiskFreeTypeChange}
                                 />
-                                <span className="ml-2 text-white">€STR (3.413%)</span>
+                                <span className="ml-2 text-white">Euribor-12m</span>
                             </label>
 
                             {/* Custom Rate option */}
