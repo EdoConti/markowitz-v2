@@ -2,11 +2,7 @@ from flask import Blueprint, jsonify, request
 from utils.fetchAndStore import _fetch_and_store_security
 from utils.getSecurityInfo import _get_security_info
 from utils.getOptimalPortfolio import _get_optimal_portfolio
-from scipy.optimize import minimize
-from models.SecurityModel import Security
-import yfinance as yf
 import numpy as np
-from math import sqrt
 from db_config import db
 import pandas as pd
 
@@ -80,9 +76,12 @@ def get_covariance_correlation_matrix():
 
             # Add to the dictionary with the date as the index
             sec_ret[ticker] = pd.Series(data=daily_returns, index=dates)
+        
+        min_l = min(len(sec_ret[ticker]) for ticker in sec_ret.keys())
+        adj_sec_ret = {ticker: sec_ret[ticker][:min_l] for ticker in sec_ret.keys()}
 
         # Create a DataFrame from the dictionary, aligning by dates and filling missing data with NaN
-        to_covary = pd.DataFrame(sec_ret).fillna(value=np.nan)
+        to_covary = pd.DataFrame(adj_sec_ret).fillna(value=np.nan)
 
 
         # Check if there are sufficient data points to compute covariance and correlation matrices
@@ -134,55 +133,3 @@ def get_optimal_portfolio():
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
 
-
-
-
-
-@security_bp.route("/securities/simulation", methods=["GET"])
-def simulate_portfolios():
-    n_portfolios = 50000
-    tickers = request.args.getlist('tickers')  # Retrieve tickers as a list
-    
-    if not tickers:
-        return jsonify({"error": "Tickers are required as query parameters."}), 400
-
-    # Fetch and prepare data
-    data = {
-        ticker: result["daily_return"]
-        for ticker in tickers
-        if (result := db.securities.find_one({"ticker": ticker})) and "daily_return" in result
-    }
-
-    # Create a DataFrame for daily returns
-    returns_df = pd.DataFrame(data)
-    avg_returns = returns_df.mean().values  # Mean daily returns for each ticker
-    cov_m = returns_df.cov().values  # Covariance matrix of daily returns
-
-    # Initialize arrays for simulation results
-    sim_weights = np.zeros((n_portfolios, len(tickers)))
-    sim_returns = np.zeros(n_portfolios)
-    sim_risks = np.zeros(n_portfolios)
-
-    for idx in range(n_portfolios):
-        # Generate random weights for each portfolio
-        w = np.random.random(len(tickers))
-        w /= np.sum(w)  # Normalize to ensure weights sum to 1
-
-        # Store weights, returns, and risks for each simulated portfolio
-        sim_weights[idx, :] = w
-        sim_returns[idx] = np.dot(w, avg_returns) * 250  # Annualized return
-        sim_risks[idx] = np.sqrt(np.dot(w.T, np.dot(cov_m * 250, w)))  # Annualized risk
-
-    # Calculate Sharpe ratios (assumes no risk-free rate)
-    sharpe_ratios = sim_returns / sim_risks
-
-    # Prepare response data
-    response = {
-        "n_portfolios": n_portfolios,
-        "sim_weights": sim_weights.tolist(),
-        "sim_returns": sim_returns.tolist(),
-        "sim_risks": sim_risks.tolist(),
-        "sharpe_ratios": sharpe_ratios.tolist()
-    }
-
-    return jsonify(response), 200

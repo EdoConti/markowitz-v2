@@ -1,9 +1,9 @@
-import React, {useMemo} from 'react'
-import useGetOptimizedPortfolio from '../hooks/getOptimizedPortfolio';
+import React from 'react'
 import Loader from './Loader';
 import ErrorBanner from './ErrorBanner';
+import Chart from './Chart';
 
-const MarkowitzChart = ({optimalPortfolio, portfolioError, portfolioLoading}) => {
+const MarkowitzChart = ({optimalPortfolio, portfolioError, portfolioLoading, tickers_ls, riskFree}) => {
 
     if (portfolioError) {
         return (
@@ -22,17 +22,26 @@ const MarkowitzChart = ({optimalPortfolio, portfolioError, portfolioLoading}) =>
             <h2 className="text-xl font-semibold mb-4">Efficient Frontier</h2>
             <div className="flex justify-center flex-col space-y-5">
                 <div className="bg-gray-200 p-8 rounded items-center">
-                    <div className='w-full'><strong>Optimal Return:</strong> {optimalPortfolio.optimalReturn}%</div>
+                    <div className=''><strong>Optimal Return:</strong> {optimalPortfolio.optimalReturn}%</div>
                     <div>
                         <strong>Optimal Weights:</strong>
                         <p>
-                            {optimalPortfolio.optimalWeights.map((w, i) => (
-                            <li key={i}>{w}%</li>
-                            ))}
+                            {optimalPortfolio.optimalWeights && (
+                                <ul>
+                                    {optimalPortfolio.optimalWeights && Object.entries(optimalPortfolio.optimalWeights).map(([ticker, w]) => (
+                                        <li key={ticker}>
+                                        {ticker} — {w}%
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
                         </p>
                     </div>
-                    <div><strong>Optimal Risk:</strong> {optimalPortfolio.optimalRisk}%</div>
-                    <div><strong>Optimal Sharpe:</strong> {optimalPortfolio.optimalSharpe}</div>
+                    <div className=''><strong>Optimal Risk:</strong> {optimalPortfolio.optimalRisk}%</div>
+                    <div className=''><strong>Optimal Sharpe:</strong> {optimalPortfolio.optimalSharpe}</div>
+                </div>
+                <div>
+                    {optimalPortfolio.efficientFrontier && <Chart riskFree={optimalPortfolio.riskFree_c} efficientFrontier={optimalPortfolio.efficientFrontier}/>}
                 </div>
             </div>
         </div>

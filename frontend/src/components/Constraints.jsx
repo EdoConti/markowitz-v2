@@ -192,7 +192,7 @@ const ConstraintsComponent = ({assetInfo}) => {
                 </button>
             )}
 
-            <MarkowitzChart optimalPortfolio={optimalPortfolio} portfolioError={portfolioError} portfolioLoading={portfolioLoading}/>
+            <MarkowitzChart optimalPortfolio={optimalPortfolio} portfolioError={portfolioError} portfolioLoading={portfolioLoading} tickers_ls={tickers_ls} riskFree={riskFree}/>
         </div>
     );
 };

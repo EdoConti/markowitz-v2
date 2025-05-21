@@ -29,10 +29,12 @@ const useGetOptimizedPortfolio = () => {
 
             // Set the optimal portfolio response data to state
             setOptimalPortfolio({
+                riskFree_c: response.data.riskFree,
                 optimalWeights: response.data.optimal_weights,
                 optimalReturn: response.data.optimal_return,
                 optimalRisk: response.data.optimal_risk,
                 optimalSharpe: response.data.optimal_sharpe,
+                efficientFrontier: response.data.efficient_frontier
             });
 
         } catch (err) {

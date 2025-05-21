@@ -5,9 +5,9 @@ import requests as req
 from bs4 import BeautifulSoup
 from functools import lru_cache
 from scipy.optimize import minimize
-from utils.negateSharpe import _negate_sharpe
 from utils.portfolioRisk import _portfolio_risk
 from utils.getSecurityInfo import _get_security_info
+from utils.getEfficientFrontier import _compute_efficient_frontier
 
 @lru_cache
 def euribor_rate():
@@ -24,7 +24,6 @@ def _get_optimal_portfolio(tickers, weights, risk_free, risk_free_type, liquidit
 
     if not tickers or len(tickers)<2:
         return {"error": "Insufficient number of tickers"}, 400
-    print('done1')
     risk_free = np.float64(risk_free)/100
 
     if risk_free_type == '^TNX':
@@ -41,7 +40,6 @@ def _get_optimal_portfolio(tickers, weights, risk_free, risk_free_type, liquidit
 
     adj_portfolio_returns_df = pd.DataFrame(adj_portfolio)
     avg_adj_returns = adj_portfolio_returns_df.mean()
-    print(avg_adj_returns)
     covariance_matrix = adj_portfolio_returns_df.cov()
 
     weights = np.array([w for w in weights.values()])
@@ -65,17 +63,26 @@ def _get_optimal_portfolio(tickers, weights, risk_free, risk_free_type, liquidit
                 options={"ftol":1e-9, "disp": False, "maxiter": 1000}
             )
         
-        
     # Calculate optimal portfolio values
     optimal_weights = result.x
-    optimal_return = np.dot(optimal_weights, avg_adj_returns) * 252  # Annualize the log return
-    optimal_risk = _portfolio_risk(optimal_weights, covariance_matrix) * np.sqrt(252)  # Annualize the risk
+    optimal_return = (1+np.dot(optimal_weights, avg_adj_returns))**252 - 1  # Annualize the return
+    optimal_risk = _portfolio_risk(optimal_weights, covariance_matrix)*np.sqrt(252)  # Annualize the risk
     optimal_sharpe = (optimal_return - risk_free) / optimal_risk if optimal_risk != 0 else None
+
+    min_var_port = {
+        'Optimal Weights':optimal_weights,
+        'Return':(optimal_return+1)**(1/252)-1,
+        'Risk':optimal_risk/np.sqrt(252)
+    }
+
+    efficient_frontier = _compute_efficient_frontier(tickers,avg_adj_returns,covariance_matrix,min_var_port,num_points=500, bounds=bounds)
         
     # Return results in a structured JSON-friendly format
     return {
-        "optimal_weights": [round(w*100,2) for w in optimal_weights.tolist()],
+        'riskFree':np.float64(risk_free),
+        "optimal_weights": {f'{tickers[idx]}':round(w*100,2) for idx,w in enumerate(optimal_weights.tolist())},
         "optimal_return": round(optimal_return*100,2),
         "optimal_risk": round(optimal_risk*100,2),
-        "optimal_sharpe": round(optimal_sharpe,2)
+        "optimal_sharpe": round(optimal_sharpe,2),
+        "efficient_frontier": efficient_frontier
     }, 200
