@@ -3,9 +3,13 @@ from utils.fetchAndStore import _fetch_and_store_security
 from utils.getSecurityInfo import _get_security_info
 from utils.getOptimalPortfolio import _get_optimal_portfolio
 import numpy as np
+from pathlib import Path
+import json
 from db_config import db
+from pymongo import ASCENDING
 import pandas as pd
 
+db.securities.create_index([("ticker", ASCENDING)], unique=True)
 security_bp = Blueprint("security_bp", __name__)
 
 # Route to post new securities in the db.
@@ -133,3 +137,151 @@ def get_optimal_portfolio():
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
 
+def _normalize_securities_json(data):
+    """
+    Accepts either:
+      - { "tickers": [ {ticker,label,proxy_category}, ... ] }
+      - [ {ticker,label,proxy_category}, ... ]
+      - { "SPY": {"label":"liquid","proxy_category":null}, ... }  (mapping form)
+      - [ "SPY", "QQQ", ... ]  (list of strings)
+    Returns: list of dicts with keys: ticker, label, proxy_category
+    """
+    items = []
+
+    if isinstance(data, dict):
+        if "tickers" in data and isinstance(data["tickers"], list):
+            src = data["tickers"]
+        else:
+            # mapping form
+            src = []
+            for k, v in data.items():
+                if isinstance(v, dict):
+                    src.append({"ticker": k, **v})
+                else:
+                    src.append({"ticker": k, "label": v, "proxy_category": None})
+    elif isinstance(data, list):
+        src = data
+    else:
+        return items
+
+    for x in src:
+        if isinstance(x, str):
+            items.append({"ticker": x.upper(), "label": None, "proxy_category": None})
+            continue
+        if not isinstance(x, dict):
+            continue
+        t = (x.get("ticker") or x.get("symbol") or "").upper()
+        if not t:
+            continue
+        items.append({
+            "ticker": t,
+            "label": x.get("label"),
+            "proxy_category": x.get("proxy_category") or x.get("proxy")
+        })
+    return items
+
+from pathlib import Path
+
+def _find_securities_json(explicit: str | None = None) -> Path:
+    here = Path(__file__).resolve()
+
+    # If caller supplied a path (absolute or relative to this file), try it first
+    if explicit:
+        p = Path(explicit)
+        if not p.is_absolute():
+            p = (here.parent / p).resolve()
+        if p.exists():
+            return p
+        raise FileNotFoundError(f"Explicit path not found: {p}")
+
+    # Common candidates (ordered)
+    candidates = [
+        here.parent.parent / "routes" / "securities.json",  # ../routes/securities.json
+        here.parent / "securities.json",                    # ./securities.json (same dir as this file)
+        here.parent.parent / "models" / "securities.json",  # ../models/securities.json (old location)
+        Path.cwd() / "routes" / "securities.json",          # CWD/routes/securities.json
+        Path.cwd() / "securities.json",                     # CWD/securities.json
+    ]
+    for p in candidates:
+        p = p.resolve()
+        if p.exists():
+            return p
+
+    tried = "\n".join(str(c.resolve()) for c in candidates)
+    raise FileNotFoundError(f"securities.json not found. Tried:\n{tried}")
+
+
+@security_bp.route("/securities/bulk-from-file", methods=["GET", "POST"])
+def bulk_from_file():
+    try:
+        dry_run = request.method == "GET" or request.args.get("dry_run", "false").lower() == "true"
+        override_path = request.args.get("path")  # e.g., ../routes/securities.json
+
+        json_path = _find_securities_json(override_path)
+        with open(json_path, "r", encoding="utf-8") as f:
+            raw = json.load(f)
+
+        items = _normalize_securities_json(raw)
+        if not items:
+            return jsonify({"status": "error", "message": "No valid tickers found"}), 400
+
+        if dry_run:
+            return jsonify({
+                "status": "ok",
+                "message": f"Dry run; using {str(json_path)}",
+                "count": len(items),
+                "sample": items[:5]
+            }), 200
+
+        results = []
+        for it in items:
+            tkr = it["ticker"]
+            label = it.get("label")
+            proxy_category = it.get("proxy_category")
+
+            # fetch & store
+            try:
+                resp, status = _fetch_and_store_security(tkr)
+            except Exception as e:
+                resp, status = {"error": str(e)}, 500
+
+            # tag metadata
+            db.securities.update_one(
+                {"ticker": tkr},
+                {"$set": {"liquidity_label": label, "proxy_category": proxy_category}},
+                upsert=True
+            )
+
+            results.append({"ticker": tkr, "status": int(status)})
+
+        # ✅ Always return a response here
+        return jsonify({
+            "status": "ok",
+            "count": len(results),
+            "inserted": results
+        }), 207  # or 200 if you prefer
+
+    except FileNotFoundError as e:
+        return jsonify({"status": "error", "message": str(e)}), 404
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+
+@security_bp.route("/securities/wipe", methods=["POST"])
+def wipe_securities():
+    """
+    Removes all documents from the securities collection.
+    """
+    try:
+        res = db.securities.delete_many({})
+        return jsonify({
+            "status": "ok",
+            "deleted_count": res.deleted_count
+        }), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+    
+@security_bp.route("/__ping", methods=["GET"])
+def _ping():
+    return "ok", 200

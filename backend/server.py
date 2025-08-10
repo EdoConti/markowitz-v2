@@ -26,6 +26,7 @@ def not_found(error):
 def internal_error(error):
     return {"error": "Internal Server Error"}, 500
 
+
 # Run the app
 if __name__ == "__main__":
     app.run(debug=True)
