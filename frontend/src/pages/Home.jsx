@@ -11,8 +11,7 @@ const Home = () => {
     return (
         <div className='bg-slate-700'>
             <Header />
-            <div className="container mx-auto py-6 px-4">
-                <h1 className="text-3xl font-bold text-center mb-6 text-blue-600">Markowitz Efficient Frontier</h1>
+            <div className="container mx-auto py-20 px-4">
                 <PortfolioInputForm assetInfo={assetInfo} getAssetInfo={getAssetInfo} setAssetInfo={setAssetInfo} loading={loading} error={error}/>
                 <CovarianceCorrelation assetInfo={assetInfo}/>
                 <ConstraintsComponent assetInfo={assetInfo} loading={loading} error={error}/>

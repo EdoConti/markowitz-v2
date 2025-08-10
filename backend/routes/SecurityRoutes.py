@@ -79,7 +79,7 @@ def get_covariance_correlation_matrix():
             dates = security_data["close_date"]  # Assuming 'dates' field exists
 
             # Add to the dictionary with the date as the index
-            sec_ret[ticker] = pd.Series(data=daily_returns, index=dates)
+            sec_ret[ticker] = pd.Series(data=daily_returns, index=dates[-len(daily_returns):])
         
         min_l = min(len(sec_ret[ticker]) for ticker in sec_ret.keys())
         adj_sec_ret = {ticker: sec_ret[ticker][:min_l] for ticker in sec_ret.keys()}

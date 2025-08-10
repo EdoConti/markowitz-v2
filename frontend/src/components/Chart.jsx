@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import { useMemo } from 'react'
 import {
   ScatterChart, Scatter, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ReferenceLine, ResponsiveContainer
@@ -97,7 +97,7 @@ const Chart = ({riskFree, efficientFrontier}) => {
 
                 {/* 6) Highlighted portfolio */}
                 <Scatter
-                    name="Selected Portfolio"
+                    name="Minimum Variance Portfolio"
                     data={minRiskPoints}
                     fill="red"
                     shape="star"
@@ -105,7 +105,7 @@ const Chart = ({riskFree, efficientFrontier}) => {
                 />
             </ScatterChart>
         </ResponsiveContainer>
-    )
-}
+    );
+};
 
 export default Chart
