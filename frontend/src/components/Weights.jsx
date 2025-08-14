@@ -89,37 +89,56 @@ const Weights = ({ assetInfo, error, loading, weights, setWeights }) => {
             <h2 className='text-2xl font-bold mb-4 text-white'>Choose your <span className='text-blue-500'>starting weights</span> or <span className='text-blue-500'>leave as-is</span> for random weights:</h2>
             <p className='text-xl font-bold mb-4 text-slate-800'>Remaining to allocate:  <span className='text-blue-300'> {remaining}% </span></p>
             {assetInfo && (
-                <div className='mt-4 space-y-2'>
-                    {Object.keys(assetInfo).map((ticker) => (
-                        <div key={ticker} className='flex items-center justify-between bg-gray-800 p-2 rounded'>
-                            <span className='text-white font-semibold mx-3'>{ticker}</span>
-                            <div className='flex items-center space-x-5'>
-                                <button
-                                    className='px-2 py-1 rounded bg-gray-700 hover:bg-red-400'
-                                    disabled={weights[ticker] <= 0}
-                                    onMouseDown={() => startContinuous(ticker, 'dec')}
-                                    onMouseUp={() => stopContinuous(ticker, 'dec')}
-                                    onMouseLeave={() => stopContinuous(ticker, 'dec')}
-                                    onTouchStart={() => startContinuous(ticker, 'dec')}
-                                    onTouchEnd={() => stopContinuous(ticker, 'dec')}
-                                >
-                                    -
-                                </button>
-                                <span className='text-white font-medium w-[20px]'>{weights[ticker]}%</span>
-                                <button
-                                className='px-2 py-1 rounded bg-gray-700 hover:bg-green-400'
-                                disabled={remaining <= 0}
-                                onMouseDown={() => startContinuous(ticker, 'inc')}
-                                onMouseUp={() => stopContinuous(ticker, 'inc')}
-                                onMouseLeave={() => stopContinuous(ticker, 'inc')}
-                                onTouchStart={() => startContinuous(ticker, 'inc')}
-                                onTouchEnd={() => stopContinuous(ticker, 'inc')}
-                                >
-                                +
-                                </button>
-                            </div>
+                <div className="mt-4 space-y-2">
+                    {Object.entries(assetInfo).map(([ticker, info]) => {
+                    const raw =
+                        info?.liquidity_label ??
+                        info?.liquidity_lable ?? // typo fallback
+                        info?.label ??
+                        "";
+                    const isLiquid = String(raw).toLowerCase() === "liquid";
+
+                    return (
+                        <div
+                        key={ticker}
+                        className="flex items-center justify-between bg-gray-800 p-2 rounded"
+                        >
+                        <span className="text-white font-semibold mx-3">
+                            {ticker} — {isLiquid ? "Liquid" : "Illiquid"}
+                        </span>
+
+                        <div className="flex items-center space-x-5">
+                            <button
+                            className="px-2 py-1 rounded bg-gray-700 hover:bg-red-400"
+                            disabled={(weights[ticker] ?? 0) <= 0}
+                            onMouseDown={() => startContinuous(ticker, "dec")}
+                            onMouseUp={() => stopContinuous(ticker, "dec")}
+                            onMouseLeave={() => stopContinuous(ticker, "dec")}
+                            onTouchStart={() => startContinuous(ticker, "dec")}
+                            onTouchEnd={() => stopContinuous(ticker, "dec")}
+                            >
+                            -
+                            </button>
+
+                            <span className="text-white font-medium w-[20px]">
+                            {(weights[ticker] ?? 0)}%
+                            </span>
+
+                            <button
+                            className="px-2 py-1 rounded bg-gray-700 hover:bg-green-400"
+                            disabled={(remaining ?? 0) <= 0}
+                            onMouseDown={() => startContinuous(ticker, "inc")}
+                            onMouseUp={() => stopContinuous(ticker, "inc")}
+                            onMouseLeave={() => stopContinuous(ticker, "inc")}
+                            onTouchStart={() => startContinuous(ticker, "inc")}
+                            onTouchEnd={() => stopContinuous(ticker, "inc")}
+                            >
+                            +
+                            </button>
                         </div>
-                    ))}
+                        </div>
+                    );
+                    })}
                 </div>
             )}
         </div>

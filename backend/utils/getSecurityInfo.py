@@ -24,6 +24,8 @@ def _get_security_info(ticker):
                 "variance_pct": variance_pct,
                 "std_dev": std_dev,
                 "fetched_on": security_data["fetched_on"],
+                "liquidity_label": security_data['liquidity_label'],
+                'proxy_category':security_data['proxy_category']
             }, 200            
 
     except Exception as e:

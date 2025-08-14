@@ -17,11 +17,34 @@ const ConstraintsComponent = ({assetInfo}) => {
     } = useGetOptimizedPortfolio();
 
     const tickers_ls = useMemo(() => Object.keys(assetInfo), [assetInfo]);
+
+    const labels = useMemo(() => {
+    const out = {};
+    for (const t of tickers_ls) {
+        const info = assetInfo[t] || {};
+        const lab =
+            (info.liquidity_label || info.label || '').toString().toLowerCase();
+        // Normalize to 'liquid' / 'illiquid_proxy' / '' (unknown)
+        out[t] = lab === 'liquid' ? 'liquid' : (lab || 'illiquid_proxy');
+        }
+        return out;
+    }, [assetInfo, tickers_ls]);
+    
+    
+
+    const liquidCount = useMemo(
+        () => Object.values(labels).filter((v) => v === 'liquid').length,
+        [labels]
+    );
+    const illiquidCount = useMemo(
+        () => tickers_ls.length - liquidCount,
+        [tickers_ls.length, liquidCount]
+    );
     
     const handleOptimization = () => {
         if (tickers_ls && tickers_ls.length > 1) {
             // Define the parameters before using them in the function call
-            getOptimizedPortfolio(tickers_ls, weights, riskFree, riskFreeType, liquidityFactor);
+            getOptimizedPortfolio(tickers_ls, weights, riskFree, riskFreeType, liquidityFactor, labels);
         }
     };
 

@@ -80,6 +80,18 @@ const MarkowitzChart = ({optimalPortfolio, portfolioError, portfolioLoading, tic
                                 {optimalPortfolio.optimalSharpe}
                             </p>
                         </div>
+                        <div className='space-y-2'>
+                            <p className='text-2xl font-semibold'>Liquidity Target</p>
+                            <p className='flex text-xl font-semibold text-white bg-slate-600 px-2 py-4 rounded items-center justify-center'>
+                                {optimalPortfolio.liquidityTarget}%
+                            </p>
+                        </div>
+                        <div className='space-y-2'>
+                            <p className='text-2xl font-semibold'>Liquidity Achieved</p>
+                            <p className='flex text-xl font-semibold text-white bg-slate-600 px-2 py-4 rounded items-center justify-center'>
+                                {optimalPortfolio.liquidShare}%
+                            </p>
+                        </div>
                     </div>
                     <div>
                         {optimalPortfolio.optimalWeights && <PortfolioComposition weights={optimalPortfolio.optimalWeights}/>}

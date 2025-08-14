@@ -20,69 +20,159 @@ def euribor_rate():
             euribor = np.float64(tr.find('td').text.replace(' %',''))
     return np.float64(euribor/100)
 
-def _get_optimal_portfolio(tickers, weights, risk_free, risk_free_type, liquidity_factor=None):
+def _liquid_mask_from_labels(tickers, labels_override):
+    """
+    Build a mask aligned to `tickers` using labels passed from the client.
+    labels_override can be:
+      { "AAPL":"liquid", "ARKK":"illiquid_proxy", ... }  OR
+      { "AAPL": {liquidity_label:"liquid", ...}, ... }
+    """
+    def is_liquid(v):
+        if isinstance(v, dict):
+            lab = (v.get("liquidity_label") or v.get("label") or "").strip().lower()
+        else:
+            lab = str(v or "").strip().lower()
+        return 1.0 if lab == "liquid" else 0.0
 
-    if not tickers or len(tickers)<2:
+    lab_map = {}
+    if isinstance(labels_override, dict):
+        for k, v in labels_override.items():
+            lab_map[str(k).upper()] = is_liquid(v)
+
+    return np.array([lab_map.get(t, 0.0) for t in tickers], dtype=float)
+
+def _project_w_ge_target(w, mask, target):
+    """
+    Project w to satisfy sum(w)=1 and dot(mask,w) >= target (≥).
+    Keeps relative proportions within liquid/non-liquid buckets where possible.
+    """
+    w = np.asarray(w, dtype=float)
+    w = np.clip(w, 0, None)
+    w = w / w.sum() if w.sum() > 0 else np.ones_like(w) / len(w)
+
+    m = mask.astype(float)
+    cur = float(np.dot(w, m))
+    target = float(np.clip(target, 0.0, 1.0))
+    nL = int(m.sum())
+    nN = len(w) - nL
+    if target <= cur or nL == 0:
+        return w  # already feasible or no liquid names
+
+    if nN == 0:
+        # all assets are liquid: already ≥ target for any target ≤ 1
+        return w
+
+    # Increase mass in liquid bucket up to 'target', preserving intra-bucket proportions
+    wL = w * m
+    wN = w * (1.0 - m)
+    sL, sN = wL.sum(), wN.sum()
+    if sL == 0 and nL > 0:
+        wL[m == 1.0] = 1.0 / nL
+        sL = wL.sum()
+    if sN == 0 and nN > 0:
+        wN[m == 0.0] = 1.0 / nN
+        sN = wN.sum()
+
+    need = target - sL
+    take = min(need, sN)  # cannot exceed non-liquid mass
+    if take > 0:
+        # shift proportionally from non-liquid to liquid
+        wL = wL + (wL / sL) * take if sL > 0 else wL + (m / m.sum()) * take
+        wN = wN - (wN / sN) * take
+    w_new = np.clip(wL + wN, 0, None)
+    return w_new / w_new.sum()
+
+def _get_optimal_portfolio(tickers, weights, risk_free, risk_free_type,
+                           liquidity_factor=None, labels_override=None):
+
+    if not tickers or len(tickers) < 2:
         return {"error": "Insufficient number of tickers"}, 400
-    risk_free = np.float64(risk_free)/100
 
+    # --- risk-free ---
+    risk_free = np.float64(risk_free) / 100.0
     if risk_free_type == '^TNX':
-        risk_free = np.float64(yf.Ticker(f'{risk_free_type}').history(period='1d')['Close'].values[0]/100)
+        risk_free = np.float64(yf.Ticker('^TNX').history(period='1d')['Close'].values[0] / 100.0)
     elif risk_free_type == 'STR':
         risk_free = euribor_rate()
-    
-    assert len(tickers) == len(weights)
 
-    portfolio = {ticker:_get_security_info(ticker)[0]['daily_returns'] for ticker in tickers}
-    min_l = min(len(portfolio[ticker]) for ticker in portfolio.keys())
-    adj_portfolio = {ticker: portfolio[ticker][:min_l] for ticker in portfolio.keys()}
-    #log_portfolio = {key:np.log1p(np.array(val)) for key,val in portfolio_adj.items()}
+    # --- build returns matrix from stored daily returns (aligned) ---
+    portfolio = {t: _get_security_info(t)[0]['daily_returns'] for t in tickers}
+    min_l = min(len(portfolio[t]) for t in tickers)
+    adj = {t: portfolio[t][:min_l] for t in tickers}
+    df = pd.DataFrame(adj)
+    mu = df.mean()
+    Sigma = df.cov()
 
-    adj_portfolio_returns_df = pd.DataFrame(adj_portfolio)
-    avg_adj_returns = adj_portfolio_returns_df.mean()
-    covariance_matrix = adj_portfolio_returns_df.cov()
+    # --- initial weights aligned to tickers ---
+    w0 = np.array([weights.get(t, 0.0) for t in tickers], dtype=float)
+    if (w0 == 0).all():
+        w0 = np.random.random(len(tickers))
+    w0 = w0 / w0.sum() if w0.sum() > 0 else np.ones(len(tickers)) / len(tickers)
 
-    weights = np.array([w for w in weights.values()])
+    # --- liquid mask from UI labels ---
+    m_liq = _liquid_mask_from_labels(tickers, labels_override or {})
+    n_liq = int(m_liq.sum())
 
-    if (weights == 0).all():
-        weights = np.random.random(len(portfolio.keys()))
-        weights = weights / np.sum(weights)
-    
+    # --- target (percent or fraction) ---
+    t_liq = None
+    if liquidity_factor is not None:
+        t = float(liquidity_factor)
+        if t > 1.0:  # treat as %
+            t = t / 100.0
+        t_liq = float(np.clip(t, 0.0, 1.0))
+        if n_liq == 0 and t_liq > 0:
+            return {"error": f"Requested liquid share {t_liq:.2%} infeasible: no liquid tickers in selection."}, 400
+        # warm start to satisfy ≥ target
+        w0 = _project_w_ge_target(w0, m_liq, t_liq)
+
+    # --- constraints & bounds ---
     constraints = [
-        {'type': 'eq', 'fun': lambda x: np.sum(x) - 1},  # Sum of weights is 1
+        {'type': 'eq', 'fun': lambda x: np.sum(x) - 1.0},               # sum(w)=1
     ]
-    n = len(weights) 
-    bounds = ((0.0, 1.0) ,)*n
-    result = minimize(
-                _portfolio_risk, 
-                weights, 
-                args=(covariance_matrix,), 
-                method="SLSQP", 
-                constraints=constraints, 
-                bounds=bounds,
-                options={"ftol":1e-9, "disp": False, "maxiter": 1000}
-            )
-        
-    # Calculate optimal portfolio values
-    optimal_weights = result.x
-    optimal_return = (1+np.dot(optimal_weights, avg_adj_returns))**252 - 1  # Annualize the return
-    optimal_risk = _portfolio_risk(optimal_weights, covariance_matrix)*np.sqrt(252)  # Annualize the risk
-    optimal_sharpe = (optimal_return - risk_free) / optimal_risk if optimal_risk != 0 else None
+    if t_liq is not None:
+        # >= target  →  np.dot(m_liq, w) - t_liq  >= 0
+        constraints.append({'type': 'ineq',
+                            'fun': lambda x, m=m_liq, t=t_liq: float(np.dot(x, m) - t)})
+
+    bounds = ((0.0, 1.0),) * len(tickers)
+
+    # --- solve min-variance subject to constraints ---
+    res = minimize(
+        _portfolio_risk,
+        w0,
+        args=(Sigma,),
+        method="SLSQP",
+        constraints=constraints,
+        bounds=bounds,
+        options={"ftol": 1e-9, "disp": False, "maxiter": 1000}
+    )
+    if not res.success:
+        return {"error": f"SLSQP failed: {getattr(res,'message','Optimization failed')}"}, 400
+
+    w_star = res.x
+    ret_star = (1 + np.dot(w_star, mu)) ** 252 - 1
+    risk_star = _portfolio_risk(w_star, Sigma) * np.sqrt(252)
+    sharpe_star = (ret_star - risk_free) / risk_star if risk_star != 0 else None
 
     min_var_port = {
-        'Optimal Weights':optimal_weights,
-        'Return':(optimal_return+1)**(1/252)-1,
-        'Risk':optimal_risk/np.sqrt(252)
+        'Optimal Weights': w_star,
+        'Return': (ret_star + 1) ** (1/252) - 1,
+        'Risk': risk_star / np.sqrt(252)
     }
 
-    efficient_frontier = _compute_efficient_frontier(tickers,avg_adj_returns,covariance_matrix,min_var_port,num_points=500, bounds=bounds)
-        
-    # Return results in a structured JSON-friendly format
+    eff_front = _compute_efficient_frontier(
+        tickers, mu, Sigma, min_var_port, num_points=500, bounds=bounds
+    )
+
+    liq_share = float(np.dot(w_star, m_liq))
+
     return {
-        'riskFree':np.float64(risk_free),
-        "optimal_weights": {f'{tickers[idx]}':round(w*100,2) for idx,w in enumerate(optimal_weights.tolist())},
-        "optimal_return": round(optimal_return*100,2),
-        "optimal_risk": round(optimal_risk*100,2),
-        "optimal_sharpe": round(optimal_sharpe,2),
-        "efficient_frontier": efficient_frontier
+        'riskFree': np.float64(risk_free),
+        "optimal_weights": {tickers[i]: round(w * 100, 2) for i, w in enumerate(w_star.tolist())},
+        "optimal_return": round(ret_star * 100, 2),
+        "optimal_risk": round(risk_star * 100, 2),
+        "optimal_sharpe": round(sharpe_star, 2) if sharpe_star is not None else None,
+        "efficient_frontier": eff_front,
+        "liquid_target_min": None if t_liq is None else round(t_liq * 100, 2),
+        "liquid_share_achieved": round(liq_share * 100, 2)
     }, 200

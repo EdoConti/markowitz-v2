@@ -38,7 +38,6 @@ const useGetAssetInfo = () => {
       setLoading(false);
     }
   };
-
   return { getAssetInfo, setAssetInfo, assets_loading, assets_error, assetInfo };
 };
 

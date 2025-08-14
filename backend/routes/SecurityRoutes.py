@@ -123,13 +123,14 @@ def get_optimal_portfolio():
         risk_free = data.get('riskFree', 0.03)  # Default to 0.03 if not provided
         risk_free_type = data.get('riskFree_Type', 0.03)
         liquidity_factor = data.get('liquidityFactor',0.5)
+        labels_override = data.get('labelsOverride') or data.get('labels') or {}
 
         # Ensure tickers array is populated
         if not tickers:
             return jsonify({"error": "Tickers array is not populated!"}), 400
 
         # Call the function to calculate the optimal portfolio
-        result, status_code = _get_optimal_portfolio(tickers, weights, risk_free, risk_free_type, liquidity_factor)
+        result, status_code = _get_optimal_portfolio(tickers, weights, risk_free, risk_free_type, liquidity_factor,labels_override)
 
         return jsonify(result), status_code
 
