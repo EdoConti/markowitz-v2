@@ -2,3 +2,10 @@ flask
 flask-cors
 pymongo[srv]
 gunicorn
+python-dotenv
+yfinance
+pandas
+numpy
+requests
+bs4
+scipy
