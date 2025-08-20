@@ -14,7 +14,7 @@ const useGetAssetInfo = () => {
     try {
       // Make concurrent requests for all tickers
       const requests = tickers.map((ticker) =>
-        axios.get(`http://127.0.0.1:5000/api/securities/${ticker}`, {
+        axios.get(`https://markowitz-optimization.onrender.com/api/securities/${ticker}`, {
           headers: {
             'Content-Type': 'application/json',
           },

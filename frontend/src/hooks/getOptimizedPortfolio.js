@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import axios from 'axios';
-import { LabelList } from 'recharts';
 
 const useGetOptimizedPortfolio = () => {
     const [portfolioLoading, setPortfolioLoading] = useState(false);
@@ -14,7 +13,7 @@ const useGetOptimizedPortfolio = () => {
         console.log(labels);
         try {
             const response = await axios.post(
-                'http://127.0.0.1:5000/api/securities/optimal_portfolio',
+                'https://markowitz-optimization.onrender.com/api/securities/optimal_portfolio',
                 {
                     tickers,
                     weights,

@@ -6,8 +6,15 @@ from routes.SecurityRoutes import security_bp  # Import your security routes blu
 # Initialize the Flask app
 app = Flask(__name__)
 
-CORS(app, resources={r"/api/*": {"origins": ["http://localhost:5173", "http://127.0.0.1:5173"]}})
-
+CORS(app, resources={
+    r"/api/*": {
+        "origins": [
+            "http://localhost:5173",        # dev
+            "http://127.0.0.1:5173",        # dev
+            "https://markowitz-optimization.netlify.app" # production
+        ]
+    }
+})
 # Register the blueprint for security-related routes
 app.register_blueprint(security_bp, url_prefix='/api')
 

@@ -16,7 +16,7 @@ const useGetCovarianceCorrelationMatrices = () => {
         try {
         // Make the GET request to fetch the covariance and correlation matrices
         const response = await axios.get(
-            'http://127.0.0.1:5000/api/securities/Covariance&Correlation', 
+            'https://markowitz-optimization.onrender.com/api/securities/Covariance&Correlation', 
             { // Pass tickers as query params
             params: { tickers },
             paramsSerializer: params => {

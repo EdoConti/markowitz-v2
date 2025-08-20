@@ -10,7 +10,7 @@ const useGetAllSecurities = () => {
         // Fetch securities from the backend
         const fetchSecurities = async () => {
         try {
-            const response = await axios.get("http://127.0.0.1:5000/api/securities/all");
+            const response = await axios.get("https://markowitz-optimization.onrender.com/api/securities/all");
             setSecurities(response.data.data); // Adjust the path based on your API response structure
         } catch (err) {
             setError(err.message || "An error occurred");
