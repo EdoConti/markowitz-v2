@@ -38,7 +38,7 @@ def get_all_securities():
     
     try:
         # Fetch all securities from the collection, only include ticker and long_name fields
-        securities = list(securities_collection.find({}, {'_id': 0, 'ticker': 1, 'long_name': 1}))
+        securities = list(securities_collection.find({}, {'_id': 0, 'ticker': 1, 'long_name': 1, 'proxy_category':1, 'liquidity_label':1}))
         
         return jsonify({
             "status": "success",

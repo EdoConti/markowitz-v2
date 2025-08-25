@@ -10,7 +10,6 @@ const useGetOptimizedPortfolio = () => {
         setPortfolioLoading(true);
         setPortfolioError(null);
 
-        console.log(labels);
         try {
             const response = await axios.post(
                 'https://markowitz-optimization.onrender.com/api/securities/optimal_portfolio',

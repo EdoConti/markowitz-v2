@@ -75,12 +75,6 @@ const MarkowitzChart = ({optimalPortfolio, portfolioError, portfolioLoading, tic
                             </p>
                         </div>
                         <div className='space-y-2'>
-                            <p className='text-2xl font-semibold'>Optimal Sharpe</p>
-                            <p className='flex text-xl font-semibold text-white bg-slate-600 px-2 py-4 rounded items-center justify-center'>
-                                {optimalPortfolio.optimalSharpe}
-                            </p>
-                        </div>
-                        <div className='space-y-2'>
                             <p className='text-2xl font-semibold'>Liquidity Target</p>
                             <p className='flex text-xl font-semibold text-white bg-slate-600 px-2 py-4 rounded items-center justify-center'>
                                 {optimalPortfolio.liquidityTarget}%
