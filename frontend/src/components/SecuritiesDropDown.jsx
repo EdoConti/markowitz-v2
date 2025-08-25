@@ -26,6 +26,27 @@ const SecuritiesDropdown = ({ securities, all_error, all_loading, selectedSecuri
         setSelectedSecurities(updatedSelectedSecurities);
     };
 
+    const groupedByParent = securities.reduce((groups, sec) => {
+        const [parent, child] = (sec.proxy_category || "Other").split("/");
+
+        if (!groups[parent]) groups[parent] = {};
+        
+        // If there's a child category, use it; otherwise put directly under parent
+        const subgroup = child && child.trim() !== "" ? child : null;
+
+        if (subgroup) {
+            if (!groups[parent][subgroup]) groups[parent][subgroup] = [];
+            groups[parent][subgroup].push(sec);
+        } else {
+            // Put directly under parent with key "_noChild"
+            if (!groups[parent]._noChild) groups[parent]._noChild = [];
+            groups[parent]._noChild.push(sec);
+        }
+
+        return groups;
+    }, {});
+
+
     if (all_loading) {
         return (
             <div className='flex justify-center items-center my-8'>
@@ -61,22 +82,40 @@ const SecuritiesDropdown = ({ securities, all_error, all_loading, selectedSecuri
                 </div>
             </div>
 
-            {/* Scrollable two-column dropdown */}
-            <div className="grid grid-cols-2 gap-4 max-h-[55vh] overflow-y-auto border border-gray-300 p-4 rounded-md bg-white">
-                {securities.map((security) => (
-                <label
-                    key={security.ticker}
-                    className="flex items-center space-x-2 text-md"
-                >
-                    <input
-                    type="checkbox"
-                    value={security.ticker}
-                    checked={selectedSecurities.includes(security.ticker)}
-                    onChange={handleSelection}
-                    className="form-checkbox h-4 w-4 text-indigo-600 border-gray-300 rounded focus:indigo-500"
-                    />
-                    <span>{`${security.long_name}: ${security.ticker}`}</span>
-                </label>
+            {/* Scrollable grouped dropdown */}
+            <div className="max-h-[55vh] overflow-y-auto border border-gray-300 p-4 rounded-md bg-white">
+                {Object.entries(groupedByParent).map(([parent, subgroups]) => (
+                    <div key={parent} className="mb-6">
+                    {/* Parent heading */}
+                    <h2 className="text-xl font-bold text-gray-800 mb-3 border-b-2 border-slate-700">{parent}</h2>
+
+                    {Object.entries(subgroups).map(([child, items]) => (
+                        <div key={child} className="mb-4 pl-4">
+                        {/* Only show child heading if it isn’t the "_noChild" bucket */}
+                        {child !== "_noChild" && (
+                            <h3 className="text-md font-semibold text-gray-600 mb-2">{child}</h3>
+                        )}
+
+                        <div className="grid grid-cols-2 gap-4">
+                            {items.map((security) => (
+                            <label
+                                key={security.ticker}
+                                className="flex items-center space-x-2 text-md"
+                            >
+                                <input
+                                type="checkbox"
+                                value={security.ticker}
+                                checked={selectedSecurities.includes(security.ticker)}
+                                onChange={handleSelection}
+                                className="form-checkbox h-4 w-4 text-indigo-600 border-gray-300 rounded focus:indigo-500"
+                                />
+                                <span>{`${security.long_name}: ${security.ticker}`}</span>
+                            </label>
+                            ))}
+                        </div>
+                        </div>
+                    ))}
+                    </div>
                 ))}
             </div>
         </div>
